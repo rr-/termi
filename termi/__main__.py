@@ -17,8 +17,8 @@ def parse_args():
 
     main_parser = subparsers.add_parser('show', help='convert image to ASCII')
     main_parser.add_argument(
-        '--glyph-aspect-ratio', dest='glyph_ar', metavar='NUM', type=float, default=1.9,
-        help='character aspect ratio (default: 1.9)')
+        '--glyph-aspect-ratio', dest='glyph_ar', metavar='NUM', type=float, default=2,
+        help='character aspect ratio (default: 2)')
     main_parser.add_argument(
         '--width', metavar='NUM', type=int, default=None,
         help='target image width (in characters)')
