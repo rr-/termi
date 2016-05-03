@@ -1,6 +1,7 @@
-from PIL import Image
+import math
 import itertools
 import sys
+from PIL import Image
 
 class Output(object):
     def __init__(self, size, sequences):
@@ -28,7 +29,7 @@ def _quantize(source_image, palette):
     try:
         import numpy
     except ImportError:
-        return source_image.quantize(palette=palette, method=1)
+        return source_image.convert('RGB').quantize(palette=palette, method=1)
 
     def _from_rgb(color):
         return numpy.array([color[0], color[1], color[2]], numpy.float)
@@ -68,15 +69,20 @@ def _quantize(source_image, palette):
                 source_pixel - target_pixel)
     return target_image
 
+def _write_sequence(attrs):
+    _write_str('\033[{0}m'.format(';'.join(str(x) for x in attrs)))
+
+def _write_str(str):
+    sys.stdout.write(str)
+
 def render_256(image, palette, container_size, glyph_ar):
     pos, final_size = _fit_rectangle(
         (image.width, int(image.height * 2 / glyph_ar)),
         (container_size[0], container_size[1] * 2))
-    palette_image = Image.new(mode='P', size=(16, 16))
+    palette_image = Image.new(mode='P', size=(1, len(palette)))
     palette_image.putpalette(
         [component for color in palette for component in color])
     image = image.resize(final_size, resample=Image.LANCZOS)
-    image = image.convert('RGB')
     image = _quantize(image, palette=palette_image)
     pixels = image.load()
 
@@ -94,9 +100,43 @@ def render_256(image, palette, container_size, glyph_ar):
         for x in range(image.width):
             try:
                 bg, fg, char = output[x, y]
-                sys.stdout.write('\033[48;5;{0}m'.format(bg))
-                sys.stdout.write('\033[38;5;{0}m'.format(fg))
-                sys.stdout.write(char)
+                _write_sequence([48, 5, bg])
+                _write_sequence([38, 5, fg])
+                _write_str(char)
+            except IndexError:
+                print(' ')
+        sys.stdout.write('\033[0m\n')
+
+def render_16(image, palette, container_size, glyph_ar):
+    pos, final_size = _fit_rectangle(
+        (image.width, int(image.height * 2 / glyph_ar)),
+        (container_size[0], container_size[1] * 2))
+    palette_image = Image.new(mode='P', size=(1, len(palette)))
+    while len(palette) < 256:
+        palette += [palette[0]]
+    palette_image.putpalette(
+        [component for color in palette for component in color])
+    image = image.resize(final_size, resample=Image.LANCZOS)
+    image = _quantize(image, palette=palette_image)
+    pixels = image.load()
+
+    output = {}
+    for x in range(image.width):
+        for y in range(0, image.height, 2):
+            try:
+                color_a = pixels[x, y]
+                color_b = pixels[x, y + 1]
+                output[x, y // 2] = (color_a, color_b, '▄')
+            except IndexError:
+                pass
+
+    for y in range(image.height // 2):
+        for x in range(image.width):
+            try:
+                bg, fg, char = output[x, y]
+                _write_sequence([(100 if bg >= 8 else 40) + (bg % 8)])
+                _write_sequence([(90 if fg >= 8 else 30) + (fg % 8)])
+                _write_str(char)
             except IndexError:
                 print(' ')
         sys.stdout.write('\033[0m\n')

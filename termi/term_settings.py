@@ -6,7 +6,7 @@ def _parse_palette(hex_colors):
          int(x[2:4], 16),
          int(x[4:6], 16)) for x in hex_colors]
 
-DEFAULT_PALETTE = _parse_palette([
+PALETTE_256 = _parse_palette([
     '2B2B2B', '870000', '3F573F', '875F00', '005FAF', '3F3F67', '004747', '818181',
     '414141', 'D70000', '6FA76F', 'D7AF00', '00AFFF', '7F7FB7', '00B7B7', 'CECECE',
     '000000', '00005F', '000087', '0000AF', '0000D7', '0000FF', '005F00', '005F5F',
@@ -39,6 +39,26 @@ DEFAULT_PALETTE = _parse_palette([
     '080808', '121212', '1C1C1C', '262626', '303030', '3A3A3A', '444444', '4E4E4E',
     '585858', '626262', '6C6C6C', '767676', '808080', '8A8A8A', '949494', '9E9E9E',
     'A8A8A8', 'B2B2B2', 'BCBCBC', 'C6C6C6', 'D0D0D0', 'DADADA', 'E4E4E4', 'EEEEEE',
+])
+
+PALETTE_16_DARK = _parse_palette([
+    # 16 colors
+    '444444', 'EB4F0C', '97BF5F', 'CCCC3D',
+    '3A9495', '850CD5', '7ACCC5', 'F5F2DF',
+    '252525', 'FF6242', 'B1E06F', 'EBE200',
+    '0ADCDD', 'D900FF', '66FFF2', 'FFFFFF',
+    # background / foreground
+    # '222222', 'F5F2DF',
+])
+
+PALETTE_16_LIGHT = _parse_palette([
+    # 16 colors
+    '2B2B2B', '870000', '3F573F', '875F00',
+    '005FAF', '3F3F67', '004747', '818181',
+    '414141', 'D70000', '6FA76F', 'D7AF00',
+    '00AFFF', '7F7FB7', '00B7B7', 'CECECE',
+    # background / foreground
+    #'FBFBFB', '101010',
 ])
 
 def get_term_size():

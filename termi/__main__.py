@@ -1,7 +1,6 @@
 from termi import term_settings
 from termi import renderer
 import argparse
-import sys
 import json
 from PIL import Image
 
@@ -28,6 +27,9 @@ def parse_args():
     parser.add_argument(
         '--palette', metavar='PATH', dest='palette_path',
         help='custom palette')
+    parser.add_argument(
+        '--depth', metavar='NUM', dest='depth',
+        type=int, default=8, choices=(4, 8), help='color bit resolution')
     return parser.parse_args()
 
 def main():
@@ -38,13 +40,30 @@ def main():
             terminal_size = term_settings.get_term_size()
             target_size = (terminal_size[0] - 1, terminal_size[1] - 1)
             size[i] = target_size[i]
+
+    if args.depth == 4:
+        palette = term_settings.PALETTE_16_DARK
+    elif args.depth == 8:
+        palette = term_settings.PALETTE_256
     if args.palette_path:
-        with open(args.palette_path, 'r') as handle:
-            palette = json.load(handle)
-    else:
-        palette = term_settings.DEFAULT_PALETTE
+        if args.palette_path == 'dark':
+            if args.depth != 4:
+                raise RuntimeError('Dark palette can be only used with --depth=4')
+            palette = term_settings.PALETTE_16_DARK
+        elif args.palette_path == 'light':
+            if args.depth != 4:
+                raise RuntimeError('Light palette can be only used with --depth=4')
+            palette = term_settings.PALETTE_16_LIGHT
+        else:
+            with open(args.palette_path, 'r') as handle:
+                palette = json.load(handle)
+
     image = Image.open(args.input_path)
-    renderer.render_256(image, palette, size, args.glyph_ar)
+
+    if args.depth == 8:
+        renderer.render_256(image, palette, size, args.glyph_ar)
+    elif args.depth == 4:
+        renderer.render_16(image, palette, size, args.glyph_ar)
 
 if __name__ == '__main__':
     main()
