@@ -1,12 +1,12 @@
-# Contains code from https://github.com/mkoskar/tcolors
 import os
-import sys
-import re
-import termios
-import select
-from contextlib import contextmanager
 
-DEFAULT_PALETTE = [(int(x[0:2], 16), int(x[2:4], 16),int(x[4:6], 16)) for x in [
+def _parse_palette(hex_colors):
+    return [
+        (int(x[0:2], 16),
+         int(x[2:4], 16),
+         int(x[4:6], 16)) for x in hex_colors]
+
+DEFAULT_PALETTE = _parse_palette([
     '2B2B2B', '870000', '3F573F', '875F00', '005FAF', '3F3F67', '004747', '818181',
     '414141', 'D70000', '6FA76F', 'D7AF00', '00AFFF', '7F7FB7', '00B7B7', 'CECECE',
     '000000', '00005F', '000087', '0000AF', '0000D7', '0000FF', '005F00', '005F5F',
@@ -39,84 +39,7 @@ DEFAULT_PALETTE = [(int(x[0:2], 16), int(x[2:4], 16),int(x[4:6], 16)) for x in [
     '080808', '121212', '1C1C1C', '262626', '303030', '3A3A3A', '444444', '4E4E4E',
     '585858', '626262', '6C6C6C', '767676', '808080', '8A8A8A', '949494', '9E9E9E',
     'A8A8A8', 'B2B2B2', 'BCBCBC', 'C6C6C6', 'D0D0D0', 'DADADA', 'E4E4E4', 'EEEEEE',
-]]
-
-_poll = None
-_TERM = os.environ.get('TERM')
-if os.environ.get('TMUX'):
-    _seqfmt = '\033Ptmux;\033{}\a\033\\'
-elif _TERM and (_TERM == 'screen' or _TERM.startswith('screen-')):
-    _seqfmt = '\033P{}\a\033\\'
-else:
-    _seqfmt = '{}\033\\'
-
-class TerminalSettingsError(RuntimeError):
-    pass
-
-def get_colorp(n):
-    return get_term_color([4, n])
-
-def get_colorfg():
-    return get_term_color([10])
-
-def get_colorbg():
-    return get_term_color([11])
-
-def get_colorcur():
-    return get_term_color([12])
-
-def get_term_color(ansi, timeout=1000, retries=5):
-    global _poll
-    if not _poll:
-        _poll = select.poll()
-        _poll.register(sys.stdin.fileno(), select.POLLIN)
-    while _poll.poll(0):
-        sys.stdin.read()
-    query = '\033]' + ';'.join([str(a) for a in ansi]) + ';?' + '\007'
-    os.write(0, _seqfmt.format(query).encode())
-    regex = re.compile(
-        '\033\\](\d+;)+rgba?:(([0-9a-f]+)/)?([0-9a-f]+)/([0-9a-f]+)/([0-9a-f]+)\007',
-        re.IGNORECASE)
-    match = None
-    output = ''
-    while not match:
-        if retries < 1 or not _poll.poll(timeout):
-            return None
-        retries -= 1
-        output += sys.stdin.read()
-        match = regex.search(output)
-    return [int(match.group(i)[:2], 16) for i in (4, 5, 6)]
-
-@contextmanager
-def get_term_colors():
-    if not sys.stdin.isatty():
-        raise TerminalSettingsError('<stdin> is not connected to a terminal')
-    tc_save = None
-    try:
-        tc_save = termios.tcgetattr(sys.stdin.fileno())
-        tc = termios.tcgetattr(sys.stdin.fileno())
-        tc[3] &= ~termios.ECHO
-        tc[3] &= ~termios.ICANON
-        tc[6][termios.VMIN] = 0
-        tc[6][termios.VTIME] = 0
-        termios.tcsetattr(sys.stdin.fileno(), termios.TCSANOW, tc)
-        yield
-    finally:
-        if tc_save:
-            termios.tcsetattr(
-                sys.stdin.fileno(),
-                termios.TCSANOW,
-                tc_save)
-
-def get_term_palette():
-    try:
-        with get_term_colors():
-            rgb = []
-            for i in range(256):
-                rgb.append(get_colorp(i))
-            return rgb
-    except TerminalSettingsError:
-        return DEFAULT_PALETTE
+])
 
 def get_term_size():
     output = os.popen('stty size', 'r').read().split()

@@ -13,38 +13,25 @@ def positive_int(x):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert images to ASCII')
-    subparsers = parser.add_subparsers()
-
-    main_parser = subparsers.add_parser('show', help='convert image to ASCII')
-    main_parser.add_argument(
-        '--glyph-aspect-ratio', dest='glyph_ar', metavar='NUM', type=float, default=2,
-        help='character aspect ratio (default: 2)')
-    main_parser.add_argument(
+    parser.add_argument(
+        '--glyph-aspect-ratio', dest='glyph_ar', metavar='NUM',
+        type=float, default=2, help='character aspect ratio (default: 2)')
+    parser.add_argument(
         '--width', metavar='NUM', type=int, default=None,
         help='target image width (in characters)')
-    main_parser.add_argument(
+    parser.add_argument(
         '--height', metavar='NUM', type=int, default=None,
         help='target image height (in characters)')
-    main_parser.add_argument(
+    parser.add_argument(
         metavar='PATH', dest='input_path',
         help='where to get the input image from')
-    main_parser.add_argument(
+    parser.add_argument(
         '--palette', metavar='PATH', dest='palette_path',
         help='custom palette')
-    main_parser.set_defaults(func=cmd_render_image)
+    return parser.parse_args()
 
-    dump_parser = subparsers.add_parser(
-        'dump-palette',
-        help='guess palette from terminal settings and dump it to stdout')
-    dump_parser.set_defaults(func=cmd_dump_palette)
-
-    args = parser.parse_args()
-    if not hasattr(args, 'func') or not args.func:
-        parser.print_help()
-        sys.exit(1)
-    return args
-
-def cmd_render_image(args):
+def main():
+    args = parse_args()
     size = [args.width, args.height]
     for i in range(2):
         if not size[i]:
@@ -55,17 +42,9 @@ def cmd_render_image(args):
         with open(args.palette_path, 'r') as handle:
             palette = json.load(handle)
     else:
-        palette = term_settings.get_term_palette()
+        palette = term_settings.DEFAULT_PALETTE
     image = Image.open(args.input_path)
     renderer.render_256(image, palette, size, args.glyph_ar)
-
-def cmd_dump_palette(args):
-    palette = term_settings.get_term_palette()
-    print(json.dumps(palette))
-
-def main():
-    args = parse_args()
-    args.func(args)
 
 if __name__ == '__main__':
     main()
