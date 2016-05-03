@@ -29,7 +29,7 @@ def _quantize(source_image, palette):
     try:
         import numpy
     except ImportError:
-        return source_image.convert('RGB').quantize(palette=palette, method=1)
+        return source_image.quantize(palette=palette, method=1)
 
     def _from_rgb(color):
         return numpy.array([color[0], color[1], color[2]], numpy.float)
@@ -47,7 +47,7 @@ def _quantize(source_image, palette):
                 pix[x+1, y+1] += quant_error / 16
 
     target_image = Image.new(mode='P', size=source_image.size)
-    source_pixels = source_image.convert('RGB').load()
+    source_pixels = source_image.load()
     target_pixels = target_image.load()
 
     source_pixels_copy = {}
@@ -86,6 +86,7 @@ def _get_output(image, container_size, glyph_ar, palette=None):
     pos, final_size = _fit_rectangle(
         (image.width, int(image.height * 2 / glyph_ar)),
         (container_size[0], container_size[1] * 2))
+    image = image.convert('RGB')
     image = image.resize(final_size, resample=Image.LANCZOS)
     if palette:
         palette_image = _create_palette_image(palette)
