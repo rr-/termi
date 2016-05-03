@@ -47,46 +47,32 @@ def _get_pixels(image):
             pix[x, y] = _from_rgb(real_pix[x, y])
     return pix
 
-def prepare_image(palette, path, container_size, glyph_ar, quality):
-    image = Image.open(path)
+def render_256(image, palette, container_size, glyph_ar):
     pos, final_size = _fit_rectangle(
-        (image.width, int(image.height / glyph_ar)), container_size)
+        (image.width, int(image.height * 2 / glyph_ar)),
+        (container_size[0], container_size[1] * 2))
     image = image.resize(final_size, resample=Image.LANCZOS)
     pix = _get_pixels(image)
+
     all_colors = numpy.array([_from_rgb(color) for color in palette])
-    output = {}
-    for y in range(image.height):
-        for x in range(image.width):
+    colors = {}
+    for x in range(image.width):
+        for y in range(image.height):
             old_pixel = pix[x, y]
+            index = numpy.linalg.norm(all_colors - old_pixel, axis=1).argmin()
+            colors[x, y] = index
+            new_pixel = all_colors[index]
+            _dither(pix, final_size, x, y, old_pixel - new_pixel)
 
-            # first, get a few best matching colors
-            top_color_indices = numpy.linalg.norm(all_colors - old_pixel, axis=1).argsort()[:quality]
+    output = {}
+    for x in range(image.width):
+        for y in range(0, image.height, 2):
+            color_a = colors[x, y]
+            color_b = colors[x, y + 1]
+            output[x, y // 2] = (color_a, color_b, '▄')
 
-            # now try to mix them all to see which outcome is closest
-            candidates = []
-            for i in top_color_indices:
-                color_a = all_colors[i]
-                candidates.append((color_a, (i, 0, ' ')))
-            for i, j in itertools.combinations_with_replacement(top_color_indices, 2):
-                color_a = all_colors[i]
-                color_b = all_colors[j]
-                candidates.append(((color_a + color_a + color_b) / 3, (i, j, '░')))
-                candidates.append(((color_a + color_b + color_b) / 3, (i, j, '▓')))
-                candidates.append(((color_a + color_b) / 2, (i, j, '▒')))
-
-            candidate_colors = numpy.array([c[0] for c in candidates])
-            index = numpy.linalg.norm(candidate_colors - old_pixel, axis=1).argmin()
-            entry = candidates[index]
-
-            new_pixel = entry[0]
-            output[x, y] = entry[1]
-            _dither(pix, image.size, x, y, old_pixel - new_pixel)
-
-    return image.width, image.height, output
-
-def print_output(width, height, output):
-    for y in range(height):
-        for x in range(width):
+    for y in range(image.height // 2):
+        for x in range(image.width):
             bg, fg, char = output[x, y]
             sys.stdout.write('\033[48;5;{0}m'.format(bg))
             sys.stdout.write('\033[38;5;{0}m'.format(fg))

@@ -3,6 +3,7 @@ from termi import renderer
 import argparse
 import sys
 import json
+from PIL import Image
 
 def positive_int(x):
     x = int(x)
@@ -30,9 +31,6 @@ def parse_args():
     main_parser.add_argument(
         '--palette', metavar='PATH', dest='palette_path',
         help='custom palette')
-    main_parser.add_argument(
-        '--quality', metavar='NUM', dest='quality', default=5, type=positive_int,
-        help='quality (the higher the better)')
     main_parser.set_defaults(func=cmd_render_image)
 
     dump_parser = subparsers.add_parser(
@@ -58,9 +56,8 @@ def cmd_render_image(args):
             palette = json.load(handle)
     else:
         palette = term_settings.get_term_palette()
-    output = renderer.prepare_image(
-        palette, args.input_path, size, args.glyph_ar, args.quality)
-    renderer.print_output(*output)
+    image = Image.open(args.input_path)
+    renderer.render_256(image, palette, size, args.glyph_ar)
 
 def cmd_dump_palette(args):
     palette = term_settings.get_term_palette()
