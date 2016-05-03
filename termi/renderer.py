@@ -83,14 +83,20 @@ def render_256(image, palette, container_size, glyph_ar):
     output = {}
     for x in range(image.width):
         for y in range(0, image.height, 2):
-            color_a = pixels[x, y]
-            color_b = pixels[x, y + 1]
-            output[x, y // 2] = (color_a, color_b, '▄')
+            try:
+                color_a = pixels[x, y]
+                color_b = pixels[x, y + 1]
+                output[x, y // 2] = (color_a, color_b, '▄')
+            except IndexError:
+                pass
 
     for y in range(image.height // 2):
         for x in range(image.width):
-            bg, fg, char = output[x, y]
-            sys.stdout.write('\033[48;5;{0}m'.format(bg))
-            sys.stdout.write('\033[38;5;{0}m'.format(fg))
-            sys.stdout.write(char)
+            try:
+                bg, fg, char = output[x, y]
+                sys.stdout.write('\033[48;5;{0}m'.format(bg))
+                sys.stdout.write('\033[38;5;{0}m'.format(fg))
+                sys.stdout.write(char)
+            except IndexError:
+                print(' ')
         sys.stdout.write('\033[0m\n')
