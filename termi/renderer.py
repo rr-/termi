@@ -75,17 +75,22 @@ def _write_sequence(attrs):
 def _write_str(str):
     sys.stdout.write(str)
 
-def render_256(image, palette, container_size, glyph_ar):
+def _create_palette_image(palette):
+    palette_image = Image.new(mode='P', size=(1, len(palette)))
+    while len(palette) < 256:
+        palette += [palette[0]]
+    palette_image.putpalette([comp for color in palette for comp in color])
+    return palette_image
+
+def _get_output(image, container_size, glyph_ar, palette=None):
     pos, final_size = _fit_rectangle(
         (image.width, int(image.height * 2 / glyph_ar)),
         (container_size[0], container_size[1] * 2))
-    palette_image = Image.new(mode='P', size=(1, len(palette)))
-    palette_image.putpalette(
-        [component for color in palette for component in color])
     image = image.resize(final_size, resample=Image.LANCZOS)
-    image = _quantize(image, palette=palette_image)
+    if palette:
+        palette_image = _create_palette_image(palette)
+        image = _quantize(image, palette=palette_image)
     pixels = image.load()
-
     output = {}
     for x in range(image.width):
         for y in range(0, image.height, 2):
@@ -95,9 +100,28 @@ def render_256(image, palette, container_size, glyph_ar):
                 output[x, y // 2] = (color_a, color_b, '▄')
             except IndexError:
                 pass
+    return (final_size[0], final_size[1] // 2), output
 
-    for y in range(image.height // 2):
-        for x in range(image.width):
+def render_true_color(image, container_size, glyph_ar):
+    size, output = _get_output(image, container_size, glyph_ar)
+    width, height = size
+    for y in range(height):
+        for x in range(width):
+            try:
+                bg, fg, char = output[x, y]
+                _write_sequence([48, 2, bg[0], bg[1], bg[2]])
+                _write_sequence([38, 2, fg[0], fg[1], fg[2]])
+                _write_str(char)
+            except IndexError:
+                print(' ')
+        _write_sequence([0])
+        _write_str('\n')
+
+def render_256(image, palette, container_size, glyph_ar):
+    size, output = _get_output(image, container_size, glyph_ar, palette)
+    width, height = size
+    for y in range(height):
+        for x in range(width):
             try:
                 bg, fg, char = output[x, y]
                 _write_sequence([48, 5, bg])
@@ -105,33 +129,14 @@ def render_256(image, palette, container_size, glyph_ar):
                 _write_str(char)
             except IndexError:
                 print(' ')
-        sys.stdout.write('\033[0m\n')
+        _write_sequence([0])
+        _write_str('\n')
 
 def render_16(image, palette, container_size, glyph_ar):
-    pos, final_size = _fit_rectangle(
-        (image.width, int(image.height * 2 / glyph_ar)),
-        (container_size[0], container_size[1] * 2))
-    palette_image = Image.new(mode='P', size=(1, len(palette)))
-    while len(palette) < 256:
-        palette += [palette[0]]
-    palette_image.putpalette(
-        [component for color in palette for component in color])
-    image = image.resize(final_size, resample=Image.LANCZOS)
-    image = _quantize(image, palette=palette_image)
-    pixels = image.load()
-
-    output = {}
-    for x in range(image.width):
-        for y in range(0, image.height, 2):
-            try:
-                color_a = pixels[x, y]
-                color_b = pixels[x, y + 1]
-                output[x, y // 2] = (color_a, color_b, '▄')
-            except IndexError:
-                pass
-
-    for y in range(image.height // 2):
-        for x in range(image.width):
+    size, output = _get_output(image, container_size, glyph_ar, palette)
+    width, height = size
+    for y in range(height):
+        for x in range(width):
             try:
                 bg, fg, char = output[x, y]
                 _write_sequence([(100 if bg >= 8 else 40) + (bg % 8)])
@@ -139,4 +144,5 @@ def render_16(image, palette, container_size, glyph_ar):
                 _write_str(char)
             except IndexError:
                 print(' ')
-        sys.stdout.write('\033[0m\n')
+        _write_sequence([0])
+        _write_str('\n')

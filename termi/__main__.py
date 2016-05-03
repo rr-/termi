@@ -29,7 +29,7 @@ def parse_args():
         help='custom palette')
     parser.add_argument(
         '--depth', metavar='NUM', dest='depth',
-        type=int, default=8, choices=(4, 8), help='color bit resolution')
+        type=int, default=8, choices=(4, 8, 24), help='color bit resolution')
     return parser.parse_args()
 
 def main():
@@ -46,6 +46,8 @@ def main():
     elif args.depth == 8:
         palette = term_settings.PALETTE_256
     if args.palette_path:
+        if args.depth == 24:
+            raise RuntimeError('Palette doesn\'t make sense with --depth=24')
         if args.palette_path == 'dark':
             if args.depth != 4:
                 raise RuntimeError('Dark palette can be only used with --depth=4')
@@ -60,7 +62,9 @@ def main():
 
     image = Image.open(args.input_path)
 
-    if args.depth == 8:
+    if args.depth == 24:
+        renderer.render_true_color(image, size, args.glyph_ar)
+    elif args.depth == 8:
         renderer.render_256(image, palette, size, args.glyph_ar)
     elif args.depth == 4:
         renderer.render_16(image, palette, size, args.glyph_ar)
