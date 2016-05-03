@@ -119,5 +119,8 @@ def get_term_palette():
         return DEFAULT_PALETTE
 
 def get_term_size():
-    rows, columns = os.popen('stty size', 'r').read().split()
+    output = os.popen('stty size', 'r').read().split()
+    if len(output) == 0:
+        return (80, 25)
+    rows, columns = output
     return (int(columns), int(rows))
