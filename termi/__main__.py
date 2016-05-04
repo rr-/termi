@@ -2,16 +2,16 @@ import argparse
 import json
 import sys
 import time
+from PIL import Image
 from termi import term
 from termi import term_settings
 from termi import renderer
-from PIL import Image
 
-def positive_int(x):
-    x = int(x)
-    if x < 1:
+def positive_int(value):
+    value = int(value)
+    if value < 1:
         raise argparse.ArgumentTypeError('Only positive integers allowed')
-    return x
+    return value
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert images to ASCII')
@@ -46,35 +46,35 @@ def parse_args():
         args.animate = True
     return args
 
+def _get_palette(depth, path):
+    if depth == 4:
+        return term_settings.PALETTE_16_DARK
+    if depth == 8:
+        return term_settings.PALETTE_256
+    if path:
+        if depth == 24:
+            raise RuntimeError('Palette doesn\'t make sense with --depth=24')
+        if path == 'dark':
+            if depth != 4:
+                raise RuntimeError('Dark palette can be only used with --depth=4')
+            return term_settings.PALETTE_16_DARK
+        if path == 'light':
+            if depth != 4:
+                raise RuntimeError('Light palette can be only used with --depth=4')
+            return term_settings.PALETTE_16_LIGHT
+        with open(path, 'r') as handle:
+            return json.load(handle)
+    return None
+
 def main():
     args = parse_args()
-    size = [args.width, args.height]
+    target_size = [args.width, args.height]
     for i in range(2):
-        if not size[i]:
+        if not target_size[i]:
             terminal_size = term_settings.get_term_size()
-            target_size = (terminal_size[0] - 1, terminal_size[1] - 1)
-            size[i] = target_size[i]
+            target_size[i] = terminal_size[i] - 1
 
-    if args.depth == 4:
-        palette = term_settings.PALETTE_16_DARK
-    elif args.depth == 8:
-        palette = term_settings.PALETTE_256
-    else:
-        palette = None
-    if args.palette_path:
-        if args.depth == 24:
-            raise RuntimeError('Palette doesn\'t make sense with --depth=24')
-        if args.palette_path == 'dark':
-            if args.depth != 4:
-                raise RuntimeError('Dark palette can be only used with --depth=4')
-            palette = term_settings.PALETTE_16_DARK
-        elif args.palette_path == 'light':
-            if args.depth != 4:
-                raise RuntimeError('Light palette can be only used with --depth=4')
-            palette = term_settings.PALETTE_16_LIGHT
-        else:
-            with open(args.palette_path, 'r') as handle:
-                palette = json.load(handle)
+    palette = _get_palette(args.depth, args.palette_path)
 
     image = Image.open(args.input_path)
     if palette:
@@ -82,22 +82,20 @@ def main():
     else:
         palette_image = None
 
-    if args.depth == 24:
-        output_strategy = term.mix_true_color
-    elif args.depth == 8:
-        output_strategy = term.mix_256
-    elif args.depth == 4:
-        output_strategy = term.mix_16
+    output_strategy = {
+        24: term.mix_true_color,
+        8: term.mix_256,
+        4: term.mix_16,
+    }[args.depth]
 
-    if args.scale == 'lanczos':
-        scale_strategy = Image.LANCZOS
-    elif args.scale == 'bicubic':
-        scale_strategy = Image.BICUBIC
-    elif args.scale == 'nearest':
-        scale_strategy = Image.NEAREST
+    scale_strategy = {
+        'lanczos': Image.LANCZOS,
+        'bicubic': Image.BICUBIC,
+        'nearest': Image.NEAREST,
+    }[args.scale]
 
     frame = renderer.render_image(
-        image, size, args.glyph_ar, palette_image,
+        image, target_size, args.glyph_ar, palette_image,
         output_strategy, scale_strategy)
     print(frame, end='')
     height = frame.count('\n')
@@ -110,7 +108,7 @@ def main():
                 file=sys.stderr,
                 end='\r')
             frame = renderer.render_image(
-                image, size, args.glyph_ar, palette_image,
+                image, target_size, args.glyph_ar, palette_image,
                 output_strategy, scale_strategy)
             frames.append(frame)
             image.seek(image.tell() + 1)

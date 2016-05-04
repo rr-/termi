@@ -1,6 +1,3 @@
-import math
-import itertools
-import sys
 from PIL import Image
 from termi import term
 
@@ -35,18 +32,18 @@ def resize_image(image, container_size, glyph_ar, scale_strategy):
     image = image.convert('RGB')
     return image.resize(final_size, resample=scale_strategy)
 
-def render_image(image, size, glyph_ar, palette_image,
+def render_image(image, target_size, glyph_ar, palette_image,
                  output_strategy, scale_strategy):
-    image = resize_image(image, size, glyph_ar, scale_strategy)
+    image = resize_image(image, target_size, glyph_ar, scale_strategy)
     if palette_image:
         image = image.quantize(palette=palette_image)
     pixels = image.load()
     output = ''
-    for y in range(0, image.height, 2):
-        for x in range(image.width):
-            color_a = pixels[x, y]
-            if y + 1 < image.height:
-                color_b = pixels[x, y + 1]
+    for pos_y in range(0, image.height, 2):
+        for pos_x in range(image.width):
+            color_a = pixels[pos_x, pos_y]
+            if pos_y + 1 < image.height:
+                color_b = pixels[pos_x, pos_y + 1]
             else:
                 color_b = color_a
             output += output_strategy(color_a, color_b)
