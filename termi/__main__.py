@@ -34,6 +34,10 @@ def parse_args():
         '--depth', metavar='NUM', dest='depth',
         type=int, default=8, choices=(4, 8, 24), help='color bit resolution')
     parser.add_argument(
+        '--scale', default='lanczos',
+        choices=('lanczos', 'bicubic', 'nearest'),
+        help='how to scale the image')
+    parser.add_argument(
         '--animate', action='store_true', help='animate GIF images')
     parser.add_argument(
         '--loop', action='store_true', help='loop animation until ^C')
@@ -85,13 +89,21 @@ def main():
     elif args.depth == 4:
         output_strategy = term.mix_16
 
+    if args.scale == 'lanczos':
+        scale_strategy = Image.LANCZOS
+    elif args.scale == 'bicubic':
+        scale_strategy = Image.BICUBIC
+    elif args.scale == 'nearest':
+        scale_strategy = Image.NEAREST
+
     if args.animate and getattr(image, 'is_animated', False):
         frames = []
         while image.tell() + 1 < image.n_frames:
             print('decoding frame {0} / {1}'.format(
                 image.tell(), image.n_frames), file=sys.stderr, end='\r')
             frame = renderer.render_image(
-                image, size, args.glyph_ar, palette_image, output_strategy)
+                image, size, args.glyph_ar, palette_image,
+                output_strategy, scale_strategy)
             frames.append(frame)
             image.seek(image.tell() + 1)
 
@@ -106,10 +118,10 @@ def main():
             if not args.loop:
                 return
     else:
-        print(
-            renderer.render_image(
-                image, size, args.glyph_ar, palette_image, output_strategy),
-            end='')
+        frame = renderer.render_image(
+            image, size, args.glyph_ar, palette_image,
+            output_strategy, scale_strategy)
+        print(frame, end='')
 
 
 if __name__ == '__main__':

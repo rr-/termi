@@ -28,15 +28,16 @@ def create_palette_image(palette):
     palette_image.putpalette([comp for color in palette for comp in color])
     return palette_image
 
-def resize_image(image, container_size, glyph_ar):
+def resize_image(image, container_size, glyph_ar, scale_strategy):
     pos, final_size = _fit_rectangle(
         (image.width, int(image.height * 2 / glyph_ar)),
         (container_size[0], container_size[1] * 2))
     image = image.convert('RGB')
-    return image.resize(final_size, resample=Image.LANCZOS)
+    return image.resize(final_size, resample=scale_strategy)
 
-def render_image(image, size, glyph_ar, palette_image, output_strategy):
-    image = resize_image(image, size, glyph_ar)
+def render_image(image, size, glyph_ar, palette_image,
+                 output_strategy, scale_strategy):
+    image = resize_image(image, size, glyph_ar, scale_strategy)
     if palette_image:
         image = image.quantize(palette=palette_image)
     pixels = image.load()
