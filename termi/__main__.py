@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 import time
+from termi import term
 from termi import term_settings
 from termi import renderer
 from PIL import Image
@@ -78,11 +79,11 @@ def main():
         palette_image = None
 
     if args.depth == 24:
-        output_strategy = renderer.output_true_color
+        output_strategy = term.mix_true_color
     elif args.depth == 8:
-        output_strategy = renderer.output_256
+        output_strategy = term.mix_256
     elif args.depth == 4:
-        output_strategy = renderer.output_16
+        output_strategy = term.mix_16
 
     if args.animate and getattr(image, 'is_animated', False):
         frames = []
@@ -98,8 +99,7 @@ def main():
         while True:
             for frame in frames:
                 try:
-                    sys.stdout.write('\033[0;0f')
-                    print(frame, end='')
+                    print(term.set_cursor_pos(0, 0) + frame, end='')
                     time.sleep(image.info['duration'] / 1000)
                 except (KeyboardInterrupt, SystemExit):
                     return

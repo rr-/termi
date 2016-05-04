@@ -2,6 +2,7 @@ import math
 import itertools
 import sys
 from PIL import Image
+from termi import term
 
 def _quantize_native(source_image, palette):
     return source_image.quantize(palette=palette, method=1)
@@ -69,9 +70,6 @@ def _fit_rectangle(source_rectangle, target_rectangle):
     assert output_rectangle[1] <= target_rectangle[1] + 1
     return output_pos, output_rectangle
 
-def _format_sequence(attrs):
-    return '\033[{0}m'.format(';'.join(str(x) for x in attrs))
-
 def create_palette_image(palette):
     palette_image = Image.new(mode='P', size=(1, len(palette)))
     while len(palette) < 256:
@@ -85,21 +83,6 @@ def resize_image(image, container_size, glyph_ar):
         (container_size[0], container_size[1] * 2))
     image = image.convert('RGB')
     return image.resize(final_size, resample=Image.LANCZOS)
-
-def output_true_color(bg, fg):
-    return [
-        48, 2, bg[0], bg[1], bg[2],
-        38, 2, fg[0], fg[1], fg[2],
-    ]
-
-def output_256(bg, fg):
-    return [48, 5, bg, 38, 5, fg]
-
-def output_16(bg, fg):
-    return [
-        (100 if bg >= 8 else 40) + (bg % 8),
-        (90 if fg >= 8 else 30) + (fg % 8),
-    ]
 
 def render_image(
         image,
@@ -120,8 +103,8 @@ def render_image(
                 color_b = pixels[x, y + 1]
             else:
                 color_b = color_a
-            output += _format_sequence(output_strategy(color_a, color_b))
+            output += output_strategy(color_a, color_b)
             output += '▄'
-        output += _format_sequence([0])
+        output += term.reset_attributes()
         output += '\n'
     return output
