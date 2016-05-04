@@ -1,7 +1,9 @@
-from termi import term_settings
-from termi import renderer
 import argparse
 import json
+import sys
+import time
+from termi import term_settings
+from termi import renderer
 from PIL import Image
 
 def positive_int(x):
@@ -30,7 +32,14 @@ def parse_args():
     parser.add_argument(
         '--depth', metavar='NUM', dest='depth',
         type=int, default=8, choices=(4, 8, 24), help='color bit resolution')
-    return parser.parse_args()
+    parser.add_argument(
+        '--animate', action='store_true', help='animate GIF images')
+    parser.add_argument(
+        '--loop', action='store_true', help='loop animation until ^C')
+    args = parser.parse_args()
+    if args.loop:
+        args.animate = True
+    return args
 
 def main():
     args = parse_args()
@@ -45,6 +54,8 @@ def main():
         palette = term_settings.PALETTE_16_DARK
     elif args.depth == 8:
         palette = term_settings.PALETTE_256
+    else:
+        palette = None
     if args.palette_path:
         if args.depth == 24:
             raise RuntimeError('Palette doesn\'t make sense with --depth=24')
@@ -61,13 +72,45 @@ def main():
                 palette = json.load(handle)
 
     image = Image.open(args.input_path)
+    if palette:
+        palette_image = renderer.create_palette_image(palette)
+    else:
+        palette_image = None
 
     if args.depth == 24:
-        renderer.render_true_color(image, size, args.glyph_ar)
+        output_strategy = renderer.output_true_color
     elif args.depth == 8:
-        renderer.render_256(image, palette, size, args.glyph_ar)
+        output_strategy = renderer.output_256
     elif args.depth == 4:
-        renderer.render_16(image, palette, size, args.glyph_ar)
+        output_strategy = renderer.output_16
+
+    if args.animate and getattr(image, 'is_animated', False):
+        frames = []
+        while image.tell() + 1 < image.n_frames:
+            print('decoding frame {0} / {1}'.format(
+                image.tell(), image.n_frames), file=sys.stderr, end='\r')
+            frame = renderer.render_image(
+                image, size, args.glyph_ar, palette_image, output_strategy)
+            frames.append(frame)
+            image.seek(image.tell() + 1)
+
+        stop = False
+        while True:
+            for frame in frames:
+                try:
+                    sys.stdout.write('\033[0;0f')
+                    print(frame, end='')
+                    time.sleep(1 / image.info['duration'])
+                except (KeyboardInterrupt, SystemExit):
+                    return
+            if not args.loop:
+                return
+    else:
+        print(
+            renderer.render_image(
+                image, size, args.glyph_ar, palette_image, output_strategy),
+            end='')
+
 
 if __name__ == '__main__':
     main()
