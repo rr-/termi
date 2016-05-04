@@ -14,25 +14,27 @@ def positive_int(value):
     return value
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Convert images to ASCII')
+    parser = argparse.ArgumentParser(
+        prog='termi', description='Convert images to ASCII')
     parser.add_argument(
-        '--glyph-aspect-ratio', dest='glyph_ar', metavar='NUM',
+        '--glyph-ar', dest='glyph_ar', metavar='NUM',
         type=float, default=2, help='character aspect ratio (default: 2)')
     parser.add_argument(
         '--width', metavar='NUM', type=int, default=None,
-        help='target image width (in characters)')
+        help='target width in characters (default: terminal width)')
     parser.add_argument(
         '--height', metavar='NUM', type=int, default=None,
-        help='target image height (in characters)')
+        help='target height in characters (default: terminal height)')
     parser.add_argument(
         metavar='PATH', dest='input_path',
         help='where to get the input image from')
     parser.add_argument(
-        '--palette', metavar='PATH', dest='palette_path',
-        help='custom palette')
-    parser.add_argument(
         '--depth', metavar='NUM', dest='depth',
-        type=int, default=8, choices=(4, 8, 24), help='color bit resolution')
+        type=int, default=8, choices=(4, 8, 24),
+        help='color bit resolution (default: 8)')
+    parser.add_argument(
+        '--palette', metavar='PATH', dest='palette_path',
+        help='custom palette (JSON); for --depth=4 can be also "dark" or "light"')
     parser.add_argument(
         '--scale', default='lanczos',
         choices=('lanczos', 'bicubic', 'nearest'),
@@ -40,7 +42,7 @@ def parse_args():
     parser.add_argument(
         '--animate', action='store_true', help='animate GIF images')
     parser.add_argument(
-        '--loop', action='store_true', help='loop animation until ^C')
+        '--loop', action='store_true', help='loop the animation until ^C')
     args = parser.parse_args()
     if args.loop:
         args.animate = True
