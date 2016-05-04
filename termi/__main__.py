@@ -100,7 +100,7 @@ def main():
                 try:
                     sys.stdout.write('\033[0;0f')
                     print(frame, end='')
-                    time.sleep(1 / image.info['duration'])
+                    time.sleep(image.info['duration'] / 1000)
                 except (KeyboardInterrupt, SystemExit):
                     return
             if not args.loop:
