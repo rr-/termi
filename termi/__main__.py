@@ -121,7 +121,8 @@ def main():
             for frame in frames:
                 try:
                     print(term.move_cursor_up(height) + frame, end='')
-                    time.sleep(image.info['duration'] / 1000)
+                    if term.is_interactive():
+                        time.sleep(image.info['duration'] / 1000)
                 except (KeyboardInterrupt, SystemExit):
                     return
             if not args.loop:

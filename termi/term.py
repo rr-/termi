@@ -1,3 +1,6 @@
+import os
+import sys
+
 def _format_sequence(seq, char):
     return '\033[{0}{1}'.format(';'.join(str(x) for x in seq), char)
 
@@ -21,6 +24,9 @@ def mix_16(upper, lower):
 
 def move_cursor_up(how_many_lines):
     return _format_sequence([how_many_lines], 'A')
+
+def is_interactive():
+    return os.isatty(sys.stdout.fileno()) and os.isatty(sys.stdin.fileno())
 
 def clear_current_line():
     return _format_sequence([0], 'K')
