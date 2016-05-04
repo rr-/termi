@@ -1,5 +1,5 @@
-def _format_sequence(attrs, char):
-    return '\033[{0}{1}'.format(';'.join(str(x) for x in attrs), char)
+def _format_sequence(seq, char):
+    return '\033[{0}{1}'.format(';'.join(str(x) for x in seq), char)
 
 def reset_attributes():
     return _format_sequence([0], 'm')
@@ -19,5 +19,8 @@ def mix_16(bg, fg):
         (90 if fg >= 8 else 30) + (fg % 8),
     ], 'm')
 
-def set_cursor_pos(x, y):
-    return _format_sequence([0, 0], 'f')
+def move_cursor_up(how_many_lines):
+    return _format_sequence([how_many_lines], 'A')
+
+def clear_current_line():
+    return _format_sequence([0], 'K')

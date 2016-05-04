@@ -96,32 +96,36 @@ def main():
     elif args.scale == 'nearest':
         scale_strategy = Image.NEAREST
 
+    frame = renderer.render_image(
+        image, size, args.glyph_ar, palette_image,
+        output_strategy, scale_strategy)
+    print(frame, end='')
+    height = frame.count('\n')
+
     if args.animate and getattr(image, 'is_animated', False):
         frames = []
         while image.tell() + 1 < image.n_frames:
-            print('decoding frame {0} / {1}'.format(
-                image.tell(), image.n_frames), file=sys.stderr, end='\r')
+            print(
+                'decoding frame {0} / {1}'.format(image.tell(), image.n_frames),
+                file=sys.stderr,
+                end='\r')
             frame = renderer.render_image(
                 image, size, args.glyph_ar, palette_image,
                 output_strategy, scale_strategy)
             frames.append(frame)
             image.seek(image.tell() + 1)
 
-        stop = False
+        print(term.clear_current_line(), end='')
+
         while True:
             for frame in frames:
                 try:
-                    print(term.set_cursor_pos(0, 0) + frame, end='')
+                    print(term.move_cursor_up(height) + frame, end='')
                     time.sleep(image.info['duration'] / 1000)
                 except (KeyboardInterrupt, SystemExit):
                     return
             if not args.loop:
                 return
-    else:
-        frame = renderer.render_image(
-            image, size, args.glyph_ar, palette_image,
-            output_strategy, scale_strategy)
-        print(frame, end='')
 
 
 if __name__ == '__main__':
