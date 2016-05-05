@@ -26,7 +26,7 @@ def create_palette_image(palette):
     return palette_image
 
 def resize_image(image, container_size, glyph_ar, scale_strategy):
-    pos, final_size = _fit_rectangle(
+    _, final_size = _fit_rectangle(
         (image.width, int(image.height * 2 / glyph_ar)),
         (container_size[0], container_size[1] * 2))
     image = image.convert('RGB')
