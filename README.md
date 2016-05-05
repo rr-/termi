@@ -27,6 +27,11 @@ You can even use it to display GIF animations:
 
 > ![](https://cloud.githubusercontent.com/assets/1045476/15032039/cf9036e4-125d-11e6-8b7d-87538d57e68d.gif)
 
+#### Installing
+
+- `sudo python3 setup.py install`, or
+- `yaourt -S termi-git` in Arch Linux.
+
 #### Differences to [`shellpic`](https://github.com/larsjsol/shellpic)
 
 - Quantization: while `shellpic` just maps the pixel color to keycodes on the
